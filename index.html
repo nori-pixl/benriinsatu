@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
+		<title>web kanntanninnsatu</title>
+		<!-- 外部ライブラリの読み込み -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+		<style>
+			body { font-family: "Segoe UI", Meiryo, sans-serif; margin: 0; padding: 0; color: #333; background-color: #f3f3f3; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+			.ribbon-container { background: #f3f3f3; border-bottom: 1px solid #d1d1d1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 100; flex-shrink: 0; }
+			.ribbon-tabs { display: flex; background: #e6e6e6; padding-left: 10px; border-bottom: 1px solid #ccc; }
+			.ribbon-tab { padding: 8px 18px; font-size: 13px; cursor: pointer; user-select: none; border: 1px solid transparent; border-bottom: none; margin-top: 3px; border-radius: 4px 4px 0 0; }
+			.ribbon-tab:hover { background: #f0f0f0; }
+			.ribbon-tab.active { background: #fff; border-color: #ccc; font-weight: bold; color: #107c41; }
+			.ribbon-panel { display: none; background: #fff; padding: 8px 15px; min-height: 60px; align-items: center; gap: 12px; overflow-x: auto; flex-wrap: wrap; }
+			.ribbon-panel.active { display: flex; }
+			.ribbon-group { display: flex; align-items: center; gap: 6px; border-right: 1px solid #e1e1e1; padding-right: 10px; }
+			.ribbon-btn { background: #fcfcfc; border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; min-width: 45px; height: 28px; text-decoration: none; color: #333; }
+			.ribbon-btn:hover { background: #edebe9; border-color: #a19f9d; }
+			.ribbon-btn.danger { color: #a80000; border-color: #fde7e9; }
+			.ribbon-btn.danger:hover { background: #fde7e9; }
+			.ribbon-select, .ribbon-input { padding: 3px 5px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; max-width: 100px; height: 26px; box-sizing: border-box; }
+			.ribbon-label { font-size: 11px; font-weight: bold; color: #555; margin-right: 4px; }
+			.statusbar { background: #107c41; color: white; padding: 6px 15px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+			.statusbar button { background: rgba(255,255,255,0.2); border: 1px solid #fff; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+			.main-container { display: flex; flex: 1; overflow: hidden; }
+			.workspace { flex: 2; padding: 15px; overflow-y: auto; background: #e1e1e1; box-sizing: border-box; display: flex; flex-direction: column; }
+			#inner { border: 1px solid #ccc; padding: 40px; min-height: 297mm; width: 210mm; background-color: #fff; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
+			.sidebar { width: 380px; display: flex; flex-direction: column; background: #f8f9fa; border-left: 1px solid #ccc; flex-shrink: 0; }
+			.panel { flex: 1; display: flex; flex-direction: column; padding: 12px; border-bottom: 1px solid #ccc; min-height: 0; }
+			.panel h3 { margin-top: 0; margin-bottom: 8px; font-size: 13px; color: #444; border-left: 4px solid #107c41; padding-left: 8px; }
+			#output-code { flex: 1; font-family: Consolas, monospace; background: #222; color: #fff; padding: 8px; border-radius: 4px; resize: none; border: none; font-size: 11px; }
+			#inner div, #inner section, #inner article, #inner aside, #inner header, #inner footer, #inner nav, #inner main, #inner figure, #inner details, #inner blockquote, #inner table { border: 1px dashed #bbb; padding: 15px; margin: 8px 0; background: rgba(0,0,0,0.01); position: relative; min-height: 25px; }
+			#inner table { border-collapse: collapse; width: 100%; }
+			#inner td, #inner th { border: 1px solid #ddd; padding: 8px; }
+			.target-active { outline: 2px solid #107c41 !important; background-color: #f4faf6 !important; }
+			.btn-nest { background: #107c41; color: white; border: none; font-size: 10px; padding: 2px 5px; cursor: pointer; border-radius: 3px; position: absolute; right: 5px; top: 5px; z-index: 10; }
+			.tree-container { flex: 1; overflow-y: auto; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px; }
+			#tree-view ol { margin-left: 15px; padding-left: 5px; list-style-type: decimal; }
+			#tree-view li { margin: 6px 0; font-family: Consolas, monospace; color: #0056b3; font-weight: bold; font-size: 12px; display: list-item; align-items: center; }
+			.tree-node-content { display: inline-flex; align-items: center; justify-content: space-between; width: calc(100% - 20px); cursor: pointer; padding: 2px 4px; border-radius: 3px; }
+			.tree-node-content:hover { background: #e6f3ff; }
+			.tree-node-content span { color: #666; font-weight: normal; font-size: 11px; margin-left: 5px; }
+			.tree-delete-btn { background: #fde7e9; color: #a80000; border: 1px solid #f3d4d4; font-size: 10px; padding: 1px 5px; cursor: pointer; border-radius: 3px; margin-left: auto; font-family: sans-serif; font-weight: bold; }
+			.tree-delete-btn:hover { background: #a80000; color: white; }
+		</style>
+</head>
+<body>
+		<!-- 4つのリボンタブ -->
+		         
+		<div class="ribbon-container">
+				
+				<div class="ribbon-tabs">
+						
+						<div class="ribbon-tab active" onclick="switchTab('tab-file')">ファイル</div>
+						<div class="ribbon-tab" onclick="switchTab('tab-edit')">編集</div>
+						<div class="ribbon-tab" onclick="switchTab('tab-insert')">挿入</div>
+						<div class="ribbon-tab" onclick="switchTab('tab-format')">表示形式</div>
+				</div>
+				
+				<!-- ファイル タブ -->
+				<div id="tab-file" class="ribbon-panel active">
+						<div class="ribbon-group">
+								<button id="file-new" class="ribbon-btn">新規作成</button>
+								<button id="file-clear" class="ribbon-btn danger">全クリア</button>
+						</div>
+						<div class="ribbon-group">
+								<span class="ribbon-label">保存:</span>
+								<button onclick="exportFile('html')" class="ribbon-btn">.html</button>
+								<button onclick="exportFile('pdf')" class="ribbon-btn">.pdf</button>
+								<button onclick="exportFile('txt')" class="ribbon-btn">.txt</button>
+								<button onclick="exportFile('png')" class="ribbon-btn">.png</button>
+								<button onclick="exportFile('jpeg')" class="ribbon-btn">.jpeg</button>
+								<button onclick="exportFile('jpg')" class="ribbon-btn">.jpg</button>
+								<button onclick="exportFile('xlsx')" class="ribbon-btn" style="color:#107c41;">.xlsx</button>
+						</div>
+						<div class="ribbon-group">
+								<span class="ribbon-label">開く:</span>
+								<input type="file" id="file-import" accept=".html,.txt" class="ribbon-input" style="max-width:130px;">
+						</div>
+				</div>
+				
+				<!-- 編集 タブ -->
+				<div id="tab-edit" class="ribbon-panel">
+						<div class="ribbon-group">
+								<button id="edit-undo" class="ribbon-btn">元に戻す</button>
+								<button id="edit-delete-selected" class="ribbon-btn danger">選択削除</button>
+						</div>
+						<div class="ribbon-group">
+								<span class="ribbon-label">文字編集:</span>
+								<button onclick="quickTextModify('append')" class="ribbon-btn">文末追記</button>
+								<button onclick="quickTextModify('prepend')" class="ribbon-btn">文頭挿入</button>
+								<button onclick="quickTextModify('clear')" class="ribbon-btn">文字消去</button>
+								<button onclick="quickTextModify('uppercase')" class="ribbon-btn">大文字化</button>
+								<button onclick="quickTextModify('lowercase')" class="ribbon-btn">小文字化</button>
+						</div>
+						<div class="ribbon-group">
+								<span class="ribbon-label">装飾:</span>
+								<button onclick="changeWrapMode('border')" class="ribbon-btn">枠線追加</button>
+								<button onclick="changeWrapMode('shadow')" class="ribbon-btn">影付け</button>
+								<button onclick="changeWrapMode('round')" class="ribbon-btn">角丸加工</button>
+						</div>
+				</div>
+
+				<!-- 挿入 タブ -->
+				<div id="tab-insert" class="ribbon-panel">
+						<div class="ribbon-group">
+								<span class="ribbon-label">タグ:</span>
+								<select id="ins-tag" class="ribbon-select">
+										<optgroup label="レイアウト箱">
+												<option value="div" selected>区切り箱 (div)</option>
+												<option value="section">セクション (section)</option>
+												<option value="article">記事枠 (article)</option>
+												<option value="blockquote">引用エリア (blockquote)</option>
+										</optgroup>
+										<optgroup label="文字見出し・段落">
+												<option value="h1">見出し1 (h1)</option>
+												<option value="h2">見出し2 (h2)</option>
+												<option value="h3">見出し3 (h3)</option>
+												<option value="p">段落・本文 (p)</option>
+												<option value="span">文字装飾用 (span)</option>
+												<option value="code">コード (code)</option>
+										</optgroup>
+										<optgroup label="表・リスト・UI">
+												<option value="table">データ表 (table)</option>
+												<option value="button">汎用ボタン (button)</option>
+												<option value="input-text">入力欄 (text)</option>
+												<option value="progress">進行状況バー (progress)</option>
+										</optgroup>
+										<optgroup label="メディアパーツ">
+												<option value="img">ローカル画像 (img)</option>
+										</optgroup>
+								</select>
+						</div>
+						<div class="ribbon-group">
+								<div id="ins-text-block">
+										<span class="ribbon-label">内容:</span>
+										<input type="text" id="ins-text" value="サンプルデータ" class="ribbon-input" style="width:120px;">
+								</div>
+								<div id="ins-file-block" style="display:none;">
+										<span class="ribbon-label">ファイル:</span>
+										<input type="file" id="ins-file" class="ribbon-input" style="width:120px;">
+								</div>
+						</div>
+						<div class="ribbon-group">
+								<button id="action-insert" class="ribbon-btn" style="background:#edebe9; font-weight:bold;">挿入実行</button>
+						</div>
+						<div class="ribbon-group">
+								<span class="ribbon-label">テンプレート:</span>
+								<button onclick="quickDemoSetup('blog')" class="ribbon-btn">ブログ風</button>
+								<button onclick="quickDemoSetup('table')" class="ribbon-btn">名簿表</button>
+								<button onclick="quickDemoSetup('lp')" class="ribbon-btn">LP画面</button>
+						</div>
+				</div>
+
+				<!-- 表示形式 タブ -->
+				<div id="tab-format" class="ribbon-panel">
+						<div class="ribbon-group">
+								<span class="ribbon-label">文字:</span>
+								<input type="color" id="fmt-color-text" value="#000000" style="width:30px; height:24px; vertical-align:middle; border:1px solid #ccc;">
+								<span class="ribbon-label" style="margin-left:5px;">背景:</span>
+								<input type="color" id="fmt-color-bg" value="#ffffff" style="width:30px; height:24px; vertical-align:middle; border:1px solid #ccc;">
+								<span class="ribbon-label" style="margin-left:5px;">枠線:</span>
+								<input type="color" id="fmt-color-border" value="#cccccc" style="width:30px; height:24px; vertical-align:middle; border:1px solid #ccc;">
+						</div>
+						<div class="ribbon-group">
+								<span class="ribbon-label">サイズ:</span>
+								<select id="fmt-font-size" class="ribbon-select" onchange="applyLiveStyle()">
+										<option value="12px">標準小 (12px)</option>
+										<option value="16px" selected>通常 (16px)</option>
+										<option value="24px">中見出し (24px)</option>
+										<option value="36px">大見出し (36px)</option>
+								</select>
+								<span class="ribbon-label" style="margin-left:5px;">余白:</span>
+								<select id="fmt-padding" class="ribbon-select" onchange="applyLiveStyle()">
+										<option value="0px" selected>なし (0px)</option>
+										<option value="10px">狭め (10px)</option>
+										<option value="20px">標準 (20px)</option>
+										<option value="40px">広め (40px)</option>
+								</select>
+						</div>
+						<div class="ribbon-group">
+								<button onclick="applyAlign('left')" class="ribbon-btn">左寄せ</button>
+								<button onclick="applyAlign('center')" class="ribbon-btn">中央</button>
+								<button onclick="applyAlign('right')" class="ribbon-btn">右寄せ</button>
+								<button onclick="applyAlign('justify')" class="ribbon-btn">均等</button>
+						</div>
+						<div class="ribbon-group">
+								<button onclick="toggleVisualGuide(true)" class="ribbon-btn">ガイドON</button>
+								<button onclick="toggleVisualGuide(false)" class="ribbon-btn">OFF</button>
+						</div>
+				</div>
+		</div>
+
+		<!-- ステータスバー -->
+		<div class="statusbar">
+				<div>[リボンエディタ稼働中] - 現在の追加先ターゲット領域: <span id="target-display" style="text-decoration: underline;">最背面（#inner）</span></div>
+				<button id="reset-target" style="font-weight: bold;">最背面(#inner)に戻す</button>
+		</div>
+
+		<!-- メインエリア -->
+		<div class="main-container">
+				<div class="workspace">
+						<div id="inner"></div>
+				</div>
+				
+				<div class="sidebar">
+						<div class="panel">
+								<h3>生成されるHTMLコード</h3>
+								<textarea id="output-code" readonly spellcheck="false"></textarea>
+						</div>
+						<div class="panel">
+								<h3>インタラクティブHTMLドキュメントツリー（ol）</h3>
+								<div class="tree-container">
+										<div id="tree-view"></div>
+								</div>
+						</div>
+				</div>
+		</div>
+				<script>
+		// DOM要素の参照
+		const insTag = document.getElementById("ins-tag");
+		const insTextBlock = document.getElementById("ins-text-block");
+		const insFileBlock = document.getElementById("ins-file-block");
+		const insFile = document.getElementById("ins-file");
+		const insText = document.getElementById("ins-text");
+		const actionInsert = document.getElementById("action-insert");
+		const inner = document.getElementById("inner");
+		const outputCode = document.getElementById("output-code");
+		const treeView = document.getElementById("tree-view");
+		const targetDisplay = document.getElementById("target-display");
+		const resetTargetBtn = document.getElementById("reset-target");
+		const fileImport = document.getElementById("file-import");
+
+		let currentTarget = inner;
+		let elementIdCounter = 0;
+		let historyStack = [];
+		const nestableTags = ["div", "section", "article", "blockquote", "table"];
+
+		// リボンタブ切り替え
+		function switchTab(tabId) {
+				document.querySelectorAll('.ribbon-tab').forEach(t => t.classList.remove('active'));
+				document.querySelectorAll('.ribbon-panel').forEach(p => p.classList.remove('active'));
+				
+				event.currentTarget.classList.add('active');
+				document.getElementById(tabId).classList.add('active');
+		}
+
+		// 履歴管理（Undo用）
+		function saveHistory() {
+				historyStack.push(inner.innerHTML);
+				if (historyStack.length > 30) historyStack.shift();
+		}
+
+		document.getElementById("edit-undo").addEventListener("click", () => {
+				if (historyStack.length > 0) {
+						inner.innerHTML = historyStack.pop();
+						rebindEvents();
+						changeTarget(inner, "最背面（#inner）");
+						updateOutputs();
+				} else {
+						alert("これ以上戻せません。");
+				}
+		});
+
+		// 新規作成・全クリア・選択削除
+		document.getElementById("file-new").addEventListener("click", () => { if (confirm("新規作成しますか？現在のデータは消去されます。")) { saveHistory(); inner.innerHTML = ""; changeTarget(inner, "最背面（#inner）"); updateOutputs(); } });
+		document.getElementById("file-clear").addEventListener("click", () => { if (confirm("すべての内容を完全にクリアしますか？")) { saveHistory(); inner.innerHTML = ""; changeTarget(inner, "最背面（#inner）"); updateOutputs(); } });
+
+		document.getElementById("edit-delete-selected").addEventListener("click", () => {
+				if (currentTarget === inner) { alert("最背面オブジェクトは削除不可能です。"); return; }
+				saveHistory();
+				currentTarget.remove();
+				changeTarget(inner, "最背面（#inner）");
+				updateOutputs();
+		});
+
+		// 追加先ターゲットの指定変更
+		function changeTarget(element, displayName) {
+				document.querySelectorAll('.target-active').forEach(el => el.classList.remove('target-active'));
+				currentTarget = element;
+				targetDisplay.textContent = displayName;
+				if (element !== inner) {
+						element.classList.add('target-active');
+				}
+		}
+
+		resetTargetBtn.addEventListener("click", () => changeTarget(inner, "最背面（#inner）"));
+
+		// 挿入時の入力フォーム切り替え
+		insTag.addEventListener("change", () => {
+				if (insTag.value === "img") {
+						insTextBlock.style.display = "none";
+						insFileBlock.style.display = "block";
+						insFile.accept = "image/*";
+				} else {
+						insTextBlock.style.display = "block";
+						insFileBlock.style.display = "none";
+				}
+		});
+
+		// 表示形式の動的・即時反映
+		function applyLiveStyle(element = currentTarget) {
+				if (element === inner) return;
+				element.style.fontSize = document.getElementById("fmt-font-size").value;
+				element.style.padding = document.getElementById("fmt-padding").value;
+				updateOutputs();
+		}
+
+		function applyAlign(dir) {
+				if (currentTarget === inner) return;
+				currentTarget.style.textAlign = dir;
+				currentTarget.style.display = "block";
+				if (dir === "center") currentTarget.style.margin = "8px auto";
+				else if (dir === "right") { currentTarget.style.marginLeft = "auto"; currentTarget.style.marginRight = "0"; }
+				else { currentTarget.style.margin = "8px 0"; }
+				updateOutputs();
+		}
+
+		// 文字編集コマンド
+		function quickTextModify(mode) {
+				if (currentTarget === inner || nestableTags.includes(currentTarget.tagName.toLowerCase())) {
+						alert("テキスト要素（pやh1など）を選択してから実行してください。"); return;
+				}
+				saveHistory();
+				if (mode === 'append') currentTarget.textContent += " (追記)";
+				else if (mode === 'prepend') currentTarget.textContent = "(挿入) " + currentTarget.textContent;
+				else if (mode === 'clear') currentTarget.textContent = "";
+				else if (mode === 'uppercase') currentTarget.textContent = currentTarget.textContent.toUpperCase();
+				else if (mode === 'lowercase') currentTarget.textContent = currentTarget.textContent.toLowerCase();
+				updateOutputs();
+		}
+
+		// コンテナ装飾コマンド
+		function changeWrapMode(styleType) {
+				if (currentTarget === inner) return;
+				saveHistory();
+				if (styleType === 'border') currentTarget.style.border = "3px double #107c41";
+				if (styleType === 'shadow') currentTarget.style.boxShadow = "5px 5px 15px rgba(0,0,0,0.2)";
+				if (styleType === 'round') currentTarget.style.borderRadius = "12px";
+				updateOutputs();
+		}
+
+		// ガイド線のオン・オフ
+		function toggleVisualGuide(show) {
+				inner.querySelectorAll("*").forEach(el => {
+						if (el.dataset.ignore !== "true" && nestableTags.includes(el.tagName.toLowerCase())) {
+								el.style.border = show ? "1px dashed #bbb" : "none";
+						}
+				});
+		}
+		// デモテンプレート展開
+		function quickDemoSetup(type) {
+				saveHistory();
+				if (type === 'blog') {
+						inner.innerHTML = '<h1 style="color: rgb(16, 124, 65); text-align: center;">テックブログ記事見出し</h1><p style="color: rgb(102, 102, 102); text-align: right; font-size: 12px;">投稿日: 2026年7月17日</p><hr><p>Office風リボンUIを搭載した革新的なフロントエンドHTMLジェネレーターの開発に成功しました。このエディターを使えば、高度な入れ子構造（ネストタグ）も直感的に設計・構築することができます。</p>';
+				} else if (type === 'table') {
+						inner.innerHTML = '<h2>社内メンバー名簿一覧</h2><table><tr><th>社員ID</th><th>氏名</th><th>所属部門</th></tr><tr><td>M001</td><td>山田 太郎</td><td>開発本部 第一グループ</td></tr><tr><td>M002</td><td>佐藤 美咲</td><td>デザイン・UI設計室</td></tr></table>';
+				} else if (type === 'lp') {
+						inner.innerHTML = '<div style="background-color: rgb(244, 250, 246); padding: 40px; text-align: center; border-radius: 12px;"><h1 style="font-size: 36px; color: rgb(16, 124, 65);">WebEditor Pro</h1><p style="font-size: 24px;">ローコード・ノーコードの未来がここに。</p><button style="background: rgb(16, 124, 65); color: white; border: none; padding: 10px 30px; font-size: 16px; border-radius: 4px; cursor: pointer;">今すぐ無料で始める</button></div>';
+				}
+				rebindEvents();
+				updateOutputs();
+		}
+
+		// ファイルインポート（読み込み）
+		fileImport.addEventListener("change", (e) => {
+				const file = e.target.files[0];
+				if (!file) return;
+				const reader = new FileReader();
+				reader.onload = function(evt) {
+						saveHistory();
+						let text = evt.target.result;
+						if (text.includes("<body>") && text.includes("</body>")) {
+								text = text.substring(text.indexOf("<body>") + 6, text.indexOf("</body>")).trim();
+						}
+						inner.innerHTML = text;
+						nestableTags.forEach(tag => {
+								inner.querySelectorAll(tag).forEach(el => {
+										if (!el.querySelector('.btn-nest')) {
+												const btn = document.createElement("button");
+												btn.textContent = "選択"; btn.className = "btn-nest"; btn.dataset.ignore = "true";
+												el.insertBefore(btn, el.firstChild);
+										}
+								});
+						});
+						elementIdCounter = 0;
+						inner.querySelectorAll("*").forEach(el => { if (el.dataset.ignore !== "true") { elementIdCounter++; el.dataset.guiId = elementIdCounter; } });
+						rebindEvents();
+						changeTarget(inner, "最背面（#inner）");
+						updateOutputs();
+				};
+				reader.readAsText(file);
+		});
+
+		// 挿入実行
+		actionInsert.addEventListener("click", () => {
+				saveHistory();
+				const tagVal = insTag.value;
+				let newEl;
+
+				if (tagVal === "img") {
+						if (insFile.files.length === 0) { alert("画像ファイルを選択してください。"); return; }
+						newEl = document.createElement("img");
+						newEl.src = URL.createObjectURL(insFile.files[0]);
+						newEl.style.maxWidth = "100%";
+				} else if (tagVal === "table") {
+						newEl = document.createElement("table");
+						newEl.innerHTML = "<tr><th>ヘッダー1</th><th>ヘッダー2</th></tr><tr><td>データ1</td><td>データ2</td></tr>";
+				} else if (tagVal.startsWith("input-")) {
+						newEl = document.createElement("input");
+						newEl.type = tagVal.replace("input-", "");
+						newEl.value = insText.value;
+				} else {
+						newEl = document.createElement(tagVal);
+						if (!nestableTags.includes(tagVal)) {
+								newEl.textContent = insText.value;
+						}
+				}
+
+				elementIdCounter++;
+				newEl.dataset.guiId = elementIdCounter;
+
+				if (tagVal !== "img" && tagVal !== "table") {
+						newEl.style.color = document.getElementById("fmt-color-text").value;
+				}
+				const bgColor = document.getElementById("fmt-color-bg").value;
+				if (bgColor !== "#ffffff") newEl.style.backgroundColor = bgColor;
+				newEl.style.borderColor = document.getElementById("fmt-color-border").value;
+
+				if (nestableTags.includes(tagVal)) {
+						const nestBtn = document.createElement("button");
+						nestBtn.textContent = "選択";
+						nestBtn.className = "btn-nest";
+						nestBtn.dataset.ignore = "true";
+						nestBtn.addEventListener("click", (e) => {
+								e.stopPropagation();
+								changeTarget(newEl, `<${tagVal}> タグの内部箱`);
+						});
+						newEl.insertBefore(nestBtn, newEl.firstChild);
+				}
+
+				currentTarget.appendChild(newEl);
+				applyLiveStyle(newEl);
+				updateOutputs();
+		});
+
+		// 各種ファイルエクスポート（ダウンロード）
+		function exportFile(format) {
+				const clone = inner.cloneNode(true);
+				clone.querySelectorAll('[data-ignore="true"]').forEach(el => el.remove());
+				clone.querySelectorAll('.target-active').forEach(el => el.classList.remove('target-active'));
+				clone.querySelectorAll('[data-gui-id]').forEach(el => el.removeAttribute('data-gui-id'));
+				const cleanHtml = clone.innerHTML.trim();
+				const fname = `office_document.${format}`;
+
+				if (format === 'html') {
+						const full = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n<title>Ribbon Export</title>\n<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}</style>\n</head>\n<body>\n${cleanHtml}\n</body>\n</html>`;
+						triggerDL(full, "text/html", fname);
+				} else if (format === 'txt') {
+						triggerDL(cleanHtml, "text/plain", fname);
+				} else if (format === 'pdf') {
+						html2pdf().from(clone).set({ margin: 15, filename: fname, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save();
+				} else if (format === 'xlsx') {
+						const table = clone.querySelector("table");
+						if (!table) { alert("Excel出力するには、挿入タブから「data表 (table)」を追加して構築してください。"); return; }
+						const wb = XLSX.utils.table_to_book(table);
+						XLSX.writeFile(wb, fname);
+				} else {
+						clone.style.position = "absolute"; clone.style.left = "-9999px"; clone.style.width = "800px";
+						document.body.appendChild(clone);
+						html2canvas(clone).then(canvas => {
+								const link = document.createElement("a");
+								link.href = canvas.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg');
+								link.download = fname; link.click();
+								document.body.removeChild(clone);
+						});
+				}
+		}
+
+		function triggerDL(content, mime, name) {
+				const blob = new Blob([content], { type: mime });
+				const a = document.createElement("a");
+				a.href = URL.createObjectURL(blob); a.download = name; a.click();
+		}
+
+		function rebindEvents() {
+				inner.querySelectorAll(".btn-nest").forEach(b => {
+						b.addEventListener("click", (e) => {
+								e.stopPropagation();
+								changeTarget(b.parentElement, `<${b.parentElement.tagName.toLowerCase()}> タグの内部箱`);
+						});
+				});
+		}
+
+		// 画面出力更新・ol構造ツリー生成
+		function updateOutputs() {
+				const clone = inner.cloneNode(true);
+				clone.querySelectorAll('[data-ignore="true"]').forEach(el => el.remove());
+				clone.querySelectorAll('.target-active').forEach(el => el.classList.remove('target-active'));
+				clone.querySelectorAll('[data-gui-id]').forEach(el => el.removeAttribute('data-gui-id'));
+				outputCode.value = clone.innerHTML.trim();
+
+				treeView.innerHTML = "";
+				const rootOl = document.createElement("ol");
+				buildTree(inner, rootOl);
+				treeView.appendChild(rootOl);
+		}
+
+		function buildTree(currentElement, currentOl) {
+				Array.from(currentElement.children).forEach(child => {
+						if (child.dataset.ignore === "true") return;
+
+						const li = document.createElement("li");
+						const tagName = child.tagName.toLowerCase();
+						
+						let preview = child.textContent.replace("選択", "").trim();
+						if (preview.length > 10) preview = preview.substring(0, 10) + "...";
+						if (tagName === "img") preview = "画像ファイル";
+						if (tagName === "table") preview = "データテーブル表";
+
+						const contentWrap = document.createElement("div");
+						contentWrap.className = "tree-node-content";
+						contentWrap.innerHTML = `&lt;${tagName}&gt; <span>${preview ? '- "' + preview + '"' : ''}</span>`;
+						
+						contentWrap.addEventListener("click", (e) => {
+								e.stopPropagation();
+								const uid = child.dataset.guiId;
+								const realEl = inner.querySelector(`[data-gui-id="${uid}"]`);
+								if (realEl) {
+										if (nestableTags.includes(tagName)) changeTarget(realEl, `<${tagName}> タグの内部箱`);
+										else changeTarget(realEl, `<${tagName}> 要素自体`);
+								}
+						});
+
+						const delBtn = document.createElement("button");
+						delBtn.textContent = "X";
+						delBtn.className = "tree-delete-btn";
+						delBtn.addEventListener("click", (e) => {
+								e.stopPropagation();
+								if (confirm(`<${tagName}> を削除しますか？`)) {
+										saveHistory();
+										const uid = child.dataset.guiId;
+										const realEl = inner.querySelector(`[data-gui-id="${uid}"]`);
+										if (realEl) {
+												realEl.remove();
+												changeTarget(inner, "最背面（#inner）");
+												updateOutputs();
+										}
+								}
+						});
+
+						contentWrap.appendChild(delBtn);
+						li.appendChild(contentWrap);
+						currentOl.appendChild(li);
+
+						const validChildren = Array.from(child.children).filter(c => c.dataset.ignore !== "true");
+						if (validChildren.length > 0) {
+								const subOl = document.createElement("ol");
+								li.appendChild(subOl);
+								buildTree(child, subOl);
+						}
+				});
+		}
+		</script>
+</body>
+</html>
